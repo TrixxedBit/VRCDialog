@@ -14,6 +14,7 @@ namespace genaralskar.VRC.Dialog
     {
         [Header("Dialog Variables")]
         public DialogVariables diaVars;
+        public DialogAnimator dialogAnimator;
         [Tooltip("Will add a variable to diaVars with \"{nameOfNode}_visted,1\" when a dialog node is seen")]
         public bool writeAllNodeVists;
 
@@ -157,7 +158,8 @@ namespace genaralskar.VRC.Dialog
         private void DisplayText()
         {
             // set option1 button to Continue
-            dialogTMP.text = dialogString;
+            // calls dialog animator to start displaying text
+            dialogAnimator.Show(dialogString);
 
             if(dynamicUI)
             {
