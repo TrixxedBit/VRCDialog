@@ -21,8 +21,12 @@ public class DialogAnimator : UdonSharpBehaviour
     [Header("Sounds")]
     public bool enableTypingSound = true;
     public AudioSource openSound;
-    public AudioSource typingSound;
+    public AudioSource typingAudioSource;
+    public AudioClip[] typingClips;
     public int soundEveryChars = 2;
+    public float pitchVariation = 0.05f;
+
+    private float baseTypingPitch = 1f;
 
     private string fullText;
     private float openProgress;
@@ -30,7 +34,7 @@ public class DialogAnimator : UdonSharpBehaviour
     private bool isOpening;
     private bool isTyping;
 
-    public void Show(string text) // show the stuff
+    public void Show(string text)
     {
         fullText = text;
         charIndex = 0;
@@ -38,8 +42,11 @@ public class DialogAnimator : UdonSharpBehaviour
         openProgress = 0f;
         isOpening = true;
         isTyping = false;
-        panel.transform.localScale = Vector3.zero;
+        panel.transform.localScale = new Vector3(0f, 1f, 1f);
         SetTextAlpha(0f);
+
+        if (typingAudioSource != null)
+            baseTypingPitch = typingAudioSource.pitch;
 
         if (openSound != null)
             openSound.Play();
@@ -59,7 +66,7 @@ public class DialogAnimator : UdonSharpBehaviour
         scale.z = 1f;
         panel.transform.localScale = scale;
 
-        SetTextAlpha(t); // i dont think this even works rn
+        SetTextAlpha(t);
 
         if (t < 1f)
         {
@@ -85,7 +92,7 @@ public class DialogAnimator : UdonSharpBehaviour
 
         char currentChar = fullText[charIndex];
 
-        // if the typing effect encounters an html tag like <bold> it'll pause the typing effect and skip to find the ending > so it doesn't show up during the typewriter effect.
+        // Handle TMP tags like <b>...</b>
         if (currentChar == '<')
         {
             int closingIndex = fullText.IndexOf('>', charIndex);
@@ -99,7 +106,7 @@ public class DialogAnimator : UdonSharpBehaviour
             }
         }
 
-        // Same as < but with [ for dialog specific effects like [br] (will prob change this in the future)
+        // Handle custom tag [br] for pause
         if (currentChar == '[')
         {
             int closingIndex = fullText.IndexOf(']', charIndex);
@@ -115,13 +122,16 @@ public class DialogAnimator : UdonSharpBehaviour
             }
         }
 
-        // if its anything else
+        // Add character
         textMesh.text += currentChar;
 
-        if (enableTypingSound && typingSound != null && charIndex % soundEveryChars == 0)
+        // Play typing sound
+        if (enableTypingSound && typingAudioSource != null && typingClips != null && typingClips.Length > 0 && charIndex % soundEveryChars == 0)
         {
-            typingSound.Stop();
-            typingSound.Play();
+            AudioClip clip = typingClips[Random.Range(0, typingClips.Length)];
+            typingAudioSource.pitch = baseTypingPitch + Random.Range(-pitchVariation, pitchVariation);
+            typingAudioSource.Stop(); // Optional: avoids sound overlap
+            typingAudioSource.PlayOneShot(clip);
         }
 
         charIndex++;
@@ -129,10 +139,10 @@ public class DialogAnimator : UdonSharpBehaviour
         if (enableTypingEffect)
             SendCustomEventDelayedSeconds(nameof(TypeText), textSpeed);
         else
-            SendCustomEventDelayedFrames(nameof(TypeText), 1); // Fast-forward
+            SendCustomEventDelayedFrames(nameof(TypeText), 1); // Instant mode
     }
 
-    private void SetTextAlpha(float alpha) // do not know if this even works
+    private void SetTextAlpha(float alpha)
     {
         Color c = textMesh.color;
         c.a = alpha;
@@ -146,7 +156,6 @@ public class DialogAnimator : UdonSharpBehaviour
         textMesh.text = "";
     }
 
-    // options
     public void EnableTypingEffect(bool enable)
     {
         enableTypingEffect = enable;

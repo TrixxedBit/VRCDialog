@@ -158,13 +158,14 @@ namespace genaralskar.VRC.Dialog
         private void DisplayText()
         {
             // set option1 button to Continue
-            // calls dialog animator to start displaying text
             dialogAnimator.Show(dialogString);
 
             if(dynamicUI)
             {
                 sizeFitterText.SetLayoutVertical();
                 sizeFitterBox.SetLayoutVertical();
+                 RectTransform textRect = dialogTMP.GetComponent<RectTransform>();
+                 textRect.offsetMin = new Vector2(textRect.offsetMin.x, 20); // 20 pixels top padding
             }
         }
 
